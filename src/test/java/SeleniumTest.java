@@ -4,12 +4,12 @@
 ////////////////////////////////////////////////////////////
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openqa.selenium.By;
@@ -25,11 +25,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class SeleniumTest {
-
 
     private WebDriver webDriver;
     private WebDriverWait wait;
@@ -45,7 +42,7 @@ public class SeleniumTest {
     private static final boolean IS_LINUX = OS_NAME.contains("linux");
     private static final boolean IS_MAC = OS_NAME.contains("mac");
   
-    @BeforeEach
+    @Before
     public void setUp() {
         try {
             printEnvironmentInfo();
@@ -100,13 +97,11 @@ public class SeleniumTest {
     private BrowserConfig detectBrowserAndDriver() {
         System.out.println("\n=== BROWSER AND DRIVER DETECTION ===");
         
-        // First check for driver in project's "driver" folder
         BrowserConfig projectDriverConfig = checkProjectDriverFolder();
         if (projectDriverConfig != null) {
             return projectDriverConfig;
         }
         
-        // Then check system-installed drivers
         BrowserConfig systemDriverConfig = checkSystemDrivers();
         if (systemDriverConfig != null) {
             return systemDriverConfig;
@@ -124,7 +119,6 @@ public class SeleniumTest {
         
         System.out.println("Found 'driver' folder, checking for executables...");
         
-        // Check for Edge driver first (since you mentioned x86 machines will have edge driver)
         String[] edgeDriverNames = IS_WINDOWS ? 
             new String[]{"msedgedriver.exe", "edgedriver.exe"} :
             new String[]{"msedgedriver", "edgedriver"};
@@ -140,7 +134,6 @@ public class SeleniumTest {
             }
         }
         
-        // Check for Chrome driver
         String[] chromeDriverNames = IS_WINDOWS ? 
             new String[]{"chromedriver.exe"} :
             new String[]{"chromedriver"};
@@ -163,7 +156,6 @@ public class SeleniumTest {
     private BrowserConfig checkSystemDrivers() {
         System.out.println("Checking system-installed drivers...");
         
-        // Chrome driver paths (prioritized for ARM systems)
         String[] chromeDriverPaths = {
             "/usr/bin/chromedriver",
             "/usr/local/bin/chromedriver",
@@ -176,7 +168,7 @@ public class SeleniumTest {
             chromeDriverPaths = new String[]{
                 "C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe",
                 "C:\\ChromeDriver\\chromedriver.exe",
-                "chromedriver.exe" // In PATH
+                "chromedriver.exe"
             };
         }
         
@@ -188,11 +180,10 @@ public class SeleniumTest {
             }
         }
         
-        // Edge driver paths
         if (IS_WINDOWS) {
             String[] edgeDriverPaths = {
                 "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedgedriver.exe",
-                "msedgedriver.exe" // In PATH
+                "msedgedriver.exe"
             };
             
             for (String driverPath : edgeDriverPaths) {
@@ -287,7 +278,6 @@ public class SeleniumTest {
     }
     
     private String determineHtmlUrl(File htmlFile) {
-        // Try to use HTTP server first if Python3 is available
         if (isPython3Available()) {
             try {
                 return startHttpServer(htmlFile);
@@ -298,7 +288,6 @@ public class SeleniumTest {
             System.out.println("Python3 not available, using file URL");
         }
         
-        // Fallback to file URL
         return "file://" + htmlFile.getAbsolutePath();
     }
     
@@ -310,11 +299,8 @@ public class SeleniumTest {
                 System.out.println("Python3 is available");
                 return true;
             }
-        } catch (Exception e) {
-            // Ignore
-        }
+        } catch (Exception e) {}
         
-        // Also try "python" on Windows
         if (IS_WINDOWS) {
             try {
                 Process process = new ProcessBuilder("python", "--version").start();
@@ -323,9 +309,7 @@ public class SeleniumTest {
                     System.out.println("Python is available");
                     return true;
                 }
-            } catch (Exception e) {
-                // Ignore
-            }
+            } catch (Exception e) {}
         }
         
         System.out.println("Python3/Python not available");
@@ -346,7 +330,6 @@ public class SeleniumTest {
         
         httpServerProcess = pb.start();
         
-        // Wait for server to start
         Thread.sleep(3000);
         
         if (!httpServerProcess.isAlive()) {
@@ -355,7 +338,6 @@ public class SeleniumTest {
         
         String url = "http://localhost:" + port + "/" + fileName;
         
-        // Test connectivity
         for (int i = 0; i < 10; i++) {
             try {
                 java.net.URL testUrl = new java.net.URL(url);
@@ -395,25 +377,20 @@ public class SeleniumTest {
     }
     
     private WebDriver createChromeDriver(BrowserConfig config) {
-        // Set driver path
         System.setProperty("webdriver.chrome.driver", config.driverPath);
         
         ChromeOptions options = new ChromeOptions();
         
-        // Set binary if found
         if (config.binaryPath != null) {
             options.setBinary(config.binaryPath);
         }
         
-        // Add arguments based on architecture and environment
         options.addArguments(getChromeArguments());
         
-        // Enable logging
         LoggingPreferences logPrefs = new LoggingPreferences();
         logPrefs.enable(LogType.BROWSER, Level.ALL);
         options.setCapability("goog:loggingPrefs", logPrefs);
         
-        // Create service
         ChromeDriverService.Builder serviceBuilder = new ChromeDriverService.Builder()
             .usingDriverExecutable(new File(config.driverPath))
             .withTimeout(Duration.ofSeconds(30));
@@ -424,25 +401,20 @@ public class SeleniumTest {
     }
     
     private WebDriver createEdgeDriver(BrowserConfig config) {
-        // Set driver path
         System.setProperty("webdriver.edge.driver", config.driverPath);
         
         EdgeOptions options = new EdgeOptions();
         
-        // Set binary if found
         if (config.binaryPath != null) {
             options.setBinary(config.binaryPath);
         }
         
-        // Add arguments based on architecture and environment
         options.addArguments(getEdgeArguments());
         
-        // Enable logging
         LoggingPreferences logPrefs = new LoggingPreferences();
         logPrefs.enable(LogType.BROWSER, Level.ALL);
         options.setCapability("ms:loggingPrefs", logPrefs);
         
-        // Create service
         EdgeDriverService.Builder serviceBuilder = new EdgeDriverService.Builder()
             .usingDriverExecutable(new File(config.driverPath))
             .withTimeout(Duration.ofSeconds(30));
@@ -478,7 +450,6 @@ public class SeleniumTest {
             "--disable-renderer-backgrounding"
         };
         
-        // Add ARM-specific arguments
         if (IS_ARM) {
             String[] armArgs = {
                 "--disable-features=VizDisplayCompositor",
@@ -524,8 +495,6 @@ public class SeleniumTest {
         }
     }
 
-    
-    
     private void cleanup() {
         stopHttpServer();
         if (webDriver != null) {
@@ -538,14 +507,13 @@ public class SeleniumTest {
         }
     }
 
-    @AfterEach
+    @After
     public void tearDown() {
         System.out.println("\n=== TEARDOWN ===");
         cleanup();
         System.out.println("Teardown completed");
     }
     
-    // Helper class to store browser configuration
     private static class BrowserConfig {
         final String browserType;
         final String driverPath;
@@ -596,6 +564,4 @@ public class SeleniumTest {
         Assert.assertEquals("820", result.getText());
         
     }
-
-
 }
